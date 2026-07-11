@@ -67,8 +67,13 @@ class Media3VideoPlayer(
             )
 
 
-        MediaCodecVideoRenderer.skipMultipleFramesOnSameVsync =
-            Configs.videoPlayerSkipMultipleFramesOnSameVSync
+        // 兼容官方media3库
+        runCatching {
+            val field =
+                MediaCodecVideoRenderer::class.java.getDeclaredField("skipMultipleFramesOnSameVsync")
+            field.isAccessible = true
+            field.set(null, Configs.videoPlayerSkipMultipleFramesOnSameVSync)
+        }
         return ExoPlayer
             .Builder(context)
             .setRenderersFactory(renderersFactory)
