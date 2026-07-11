@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      build_branch:
+        description: 选择构建分支
+        required: true
+        default: dev
+        type: choice
+        options:
+          - main
+          - next
+          - dev
+      target_module:
+        description: 选择要编译的模块
+        required: true
+        default: tv
+        type: choice
+        options:
+          - tv
+          - mobile
+      target_arch:
+        description: 选择要编译的架构
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - armeabi-v7a
+          - arm64-v8a
+          - x86
+          - x86_64
+      manual_version:
+        description: 手动构建填写版本号（仅用于文件名，tag构建自动读取）
+        required: false
+        default: dev
+
+env:
+  KEYSTORE_NAME: keystore.jks
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      MODULE_NAME: ${{ github.event.inputs.target_module || 'tv' }}
+
+    steps:
+      - name: 代码迁出
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.build_branch || github.ref_name }}
+
+      - name: 构建Java环境
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: 解码生成 jks
+        run: |
+          mkdir -p ${{ env.MODULE_NAME }}
+          echo "$KEYSTORE_BASE64" | base64 -d > ${{ env.MODULE_NAME }}/${{ env.KEYSTORE_NAME }}
+          ls -lh ${{ env.MODULE_NAME }}/
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: 生成apk
+        run: |
+          chmod +x ./gradlew
+          if [[ "${{ github.event.inputs.target_arch }}" == "all" || "${{ github.event_name }}" == "push" ]]; then
+            ./gradlew :${{ env.MODULE_NAME }}:assembleRelease
+          else
+            ./gradlew :${{ env.MODULE_NAME }}:assembleRelease -PtargetAbis=${{ github.event.inputs.target_arch }}
+          fi
+          rm -f ${{ env.MODULE_NAME }}/${{ env.KEYSTORE_NAME }}
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD}}
+
+      - name: 获取版本号
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >>$GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.manual_version }}" >>$GITHUB_OUTPUT
+          fi
+
+      - name: 重命名应用
+        run: |
+          APK_DIR=${{ env.MODULE_NAME }}/build/outputs/apk/release
+          for file in $APK_DIR/${{ env.MODULE_NAME }}-*.apk; do
+            if [[ $file == *"universal"* ]]; then continue; fi
+            if [[ $file =~ .*/${{ env.MODULE_NAME }}-(.+)release.apk ]]; then
+              abi_part=${BASH_REMATCH[1]}
+              new_file_name="$APK_DIR/mytv-${{ env.MODULE_NAME }}-${abi_part}${{ steps.version.outputs.version }}.apk"
+              mv "$file" "$new_file_name"
+            elif [[ $file =~ .*/${{ env.MODULE_NAME }}-release.apk ]]; then
+              new_file_name="$APK_DIR/mytv-${{ env.MODULE_NAME }}-${{ steps.version.outputs.version }}.apk"
+              mv "$file" "$new_file_name"
+            fi
+          done
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          cp ${{ env.MODULE_NAME }}/build/outputs/apk/release/*.apk artifacts/
+
+      # Tag触发自动创建GitHub Release
+      - name: Upload Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: ncipollo/release-action@v1
+        with:
+          name: v${{ steps.version.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          allowUpdates: true
+          artifacts: artifacts/*
+
+      # 手动构建上传制品到Actions
+      - name: 上传APK制品（手动构建可用）
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyTV-${{ env.MODULE_NAME }}-${{ github.event.inputs.build_branch }}-${{ github.event.inputs.target_arch }}-${{ steps.version.outputs.version }}
+          path: artifacts/*.apk
