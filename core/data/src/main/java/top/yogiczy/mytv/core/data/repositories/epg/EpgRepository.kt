@@ -13,6 +13,7 @@ import top.yogiczy.mytv.core.data.entities.epg.EpgList
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgramme
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeList
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSource
+import top.yogiczy.mytv.core.data.network.Http
 import top.yogiczy.mytv.core.data.network.await
 import top.yogiczy.mytv.core.data.repositories.FileCacheRepository
 import top.yogiczy.mytv.core.data.repositories.epg.fetcher.EpgFetcher
@@ -142,7 +143,7 @@ private class EpgXmlRepository(
     private suspend fun fetchXml(): String {
         log.i("获取节目单xml: $url")
 
-        val client = OkHttpClient()
+        val client = Http.client
         val request = Request.Builder().url(url).build()
 
         try {

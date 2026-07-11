@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import top.yogiczy.mytv.core.data.entities.git.GitRelease
+import top.yogiczy.mytv.core.data.network.Http
 import top.yogiczy.mytv.core.data.network.await
 import top.yogiczy.mytv.core.data.repositories.git.parser.GitReleaseParser
 import top.yogiczy.mytv.core.data.utils.Loggable
@@ -20,7 +21,7 @@ class GitRepository : Loggable() {
     suspend fun latestRelease(url: String): GitRelease {
         log.d("获取最新发行版: $url")
 
-        val client = OkHttpClient()
+        val client = Http.client
         val request = Request.Builder().url(url).build()
 
         try {

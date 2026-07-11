@@ -6,6 +6,7 @@ import top.yogiczy.mytv.core.data.utils.SP
 
 object AppData {
     fun init(context: Context) {
+        Globals.context = context.applicationContext
         Globals.cacheDir = context.cacheDir
         SP.init(context)
     }
