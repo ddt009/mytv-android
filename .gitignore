@@ -1,27 +1,54 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-/.idea/deploymentTargetDropDown.xml
-/.idea/git_toolbox_prj.xml
-/.idea/deploymentTargetSelector.xml
-/.idea/GrepConsole.xml
-/.idea/material_theme_project_new.xml
-/.idea/other.xml
-/.idea/git_toolbox_blame.xml
-/.idea/emulatorDisplays.xml
+# 系统临时文件
 .DS_Store
+Thumbs.db
+*.swp
+*~
+*.bak
+
+# Android Studio IDE
+.idea/
+*.iml
+
+# Gradle & 编译产物
+.gradle
 /build
+*/build
 /captures
+/release
 .externalNativeBuild
 .cxx
+*.apk
+*.aab
+*.dex
+*.ap_
+bin/
+gen/
+out/
+
+# 密钥、本地配置（禁止提交）
 local.properties
 key.properties
-keystore.jks
+*.jks
+*.keystore
+*.p12
+signing.properties
+secrets.properties
+
+# Kotlin 编译缓存
 .kotlin
-/release
+kapt/
+kapt-generated/
+build/generated/ksp
+build/generated/kotlin
+
+# 日志、测试覆盖率
+*.log
+tmp/
+temp/
+build/reports
+jacoco.exec
+*.ec
+
+# libs：忽略jar，允许提交aar
+libs/*.jar
+!libs/*.aar
