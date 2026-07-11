@@ -23,10 +23,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
-        }
     }
 
     buildTypes {
@@ -61,14 +57,16 @@ android {
         }
     }
 
-//    splits {
-//        abi {
-//            isEnable = true
-//            isUniversalApk = false
-//            reset()
-//            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-//        }
-//    }
+    splits {
+        abi {
+            isEnable = true
+            isUniversalApk = false
+            reset()
+            val abis = project.findProperty("targetAbis")?.toString()?.split(",")
+                ?: listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include(*abis.toTypedArray())
+        }
+    }
 }
 
 dependencies {

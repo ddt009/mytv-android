@@ -25,10 +25,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        ndk {
-            abiFilters.addAll(listOf("arm64-v8a"))
-        }
     }
 
     buildTypes {
@@ -59,6 +55,17 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            isUniversalApk = false
+            reset()
+            val abis = project.findProperty("targetAbis")?.toString()?.split(",")
+                ?: listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include(*abis.toTypedArray())
         }
     }
 }
